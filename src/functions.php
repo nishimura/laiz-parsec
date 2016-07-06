@@ -243,7 +243,7 @@ function tokens(...$args){
     return f(function($showTokens, $nextPoss, $tts){
         $maybeTts = uncons($tts);
         if ($maybeTts instanceof Maybe\Nothing){
-            return new Parser(function($s, $_, $__, $eok, $__){
+            return new Parser(function($s, $_, $__, $eok, $___){
                 return $eok([], $s, unknownError($s));
             });
         }
