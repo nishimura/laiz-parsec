@@ -1,0 +1,26 @@
+{
+  "name": "laiz/laiz-parsec",
+  "description": "Parser Combinator",
+  "keywords": ["functional", "monad", "parser", "combinator"],
+  "homepage": "https://github.com/nishimura/laiz-parsec",
+  "license": "MIT",
+  "authors": [{
+    "name": "Satoshi Nishimura",
+    "email": "nishim314@gmail.com"
+  }],
+
+  "autoload": {
+      "psr-4": { "Laiz\\Parsec\\": "src/" },
+      "files": [ "src/functions.php" ]
+  },
+  "autoload-dev": {
+    "psr-4": { "Laiz\\Test\\Parsec\\": "test/" }
+  },
+  "require": {
+    "php": ">=5.6.0",
+    "laiz/laiz-monad": "0.3.*"
+  },
+  "require-dev": {
+      "phpunit/phpunit": ">=4.9"
+  }
+}
