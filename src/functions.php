@@ -4,6 +4,7 @@ namespace Laiz\Parsec;
 
 use Laiz\Func;
 use Laiz\Func\Loader;
+use Laiz\Func\Any;
 use function Laiz\Func\f;
 use function Laiz\Func\filter;
 use function Laiz\Func\foldr;
@@ -187,24 +188,30 @@ function parserBind(...$args)
 {
     return f(function($m, $k){
         $f = function($s, $cok, $cerr, $eok, $eerr) use ($m, $k){
-            $mcok = function($x, $s, $err) use ($k, $cok, $cerr){
+            $mcok = function($x, $s, $err) use ($k, $cok, $cerr, $m){
                 $peok = function($x, $s, $err2) use ($cok, $err){
                     return $cok($x, $s, mergeError($err, $err2));
                 };
                 $peerr = function($err2) use ($cerr, $err){
                     return $cerr(mergeError($err, $err2));
                 };
-                $f = $k($x)->unParser();
+                $a = $k($x);
+                if ($a instanceof Any)
+                    $a = $a->cast($m);
+                $f = $a->unParser();
                 return $f($s, $cok, $cerr, $peok, $peerr);
             };
-            $meok = function($x, $s, $err) use ($k, $cok, $cerr, $eok, $eerr){
+            $meok = function($x, $s, $err) use ($k, $cok, $cerr, $eok, $eerr, $m){
                 $peok = function($x, $s, $err2) use ($eok, $err){
                     return $eok($x, $s, mergeError($err, $err2));
                 };
                 $peerr = function($err2) use ($eerr, $err){
                     return $eerr(mergeError($err, $err2));
                 };
-                $f = $k($x)->unParser();
+                $a = $k($x);
+                if ($a instanceof Any)
+                    $a = $a->cast($m);
+                $f = $a->unParser();
                 return $f($s, $cok, $cerr, $peok, $peerr);
             };
 
