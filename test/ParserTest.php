@@ -6,6 +6,7 @@ use Laiz\Parsec;
 use Laiz\Func\Maybe;
 use function Laiz\Func\Maybe\Just;
 use function Laiz\Func\Maybe\Nothing;
+use function Laiz\Func\Monad\ret;
 use function Laiz\Parsec\Stream\uncons;
 use function Laiz\Parsec\parse;
 use function Laiz\Parsec\Show\show;
@@ -174,5 +175,40 @@ class ParserTest extends \PHPUnit_Framework_TestCase
         }, function($a){});
         $this->assertRegExp("/unexpected end of input/", show($err));
         $this->assertRegExp("/expecting EOF/", show($err));
+    }
+
+    public function testReturn()
+    {
+        $p1 = str('abc');
+        $p2 = str('def');
+
+        $p = $p1->bind(function($x) use ($p2){
+            return $p2->bind(function($y) use ($x){
+                return ret([$x, $y]);
+            });
+        });
+        $ret = parse($p, "Test", "abcdef");
+        $this->assertEquals(Right(['abc', 'def']), $ret);
+
+        $p = $p1->mappend(ret('def'));
+        $ret = parse($p, "Test", "abcdef");
+        $this->assertEquals(Right('abcdef'), $ret);
+
+        $p = ret('foo')->mappend($p1);
+        $ret = parse($p, "Test", "abcdef");
+        $this->assertEquals(Right('fooabc'), $ret);
+
+        $p = $p1->aor(ret('zzz'));
+        $ret = parse($p, "Test", "abcdef");
+        $this->assertEquals(Right('abc'), $ret);
+
+        $p = $p2->aor(ret('zzz'));
+        $ret = parse($p, "Test", "abcdef");
+        $this->assertEquals(Right('zzz'), $ret);
+
+        $p = ret('zzz')->aor($p1);
+        $ret = parse($p, "Test", "abcdef");
+        $this->assertEquals(Right('zzz'), $ret);
+
     }
 }
