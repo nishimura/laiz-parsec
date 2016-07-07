@@ -18,6 +18,8 @@ use function Laiz\Parsec\labels;
 use function Laiz\Parsec\unexpected;
 use function Laiz\Parsec\many;
 use function Laiz\Parsec\many1;
+use function Laiz\Parsec\manyTill;
+use function Laiz\Parsec\anyToken;
 use function Laiz\Parsec\skipMany;
 use function Laiz\Parsec\skipMany1;
 use function Laiz\Parsec\tryP;
@@ -417,4 +419,25 @@ class ParserCombinatorTest extends \PHPUnit_Framework_TestCase
         }, function($a){});
         $this->assertRegExp('/unexpected d/', show($err));
     }
+
+    function testManyTill()
+    {
+        $end = str('EOF;');
+        $parser = manyTill(anyToken(), $end);
+
+        $ret = parse($parser, "Test", "abcEOF;a");
+        $this->assertEquals(Right(['a', 'b', 'c']), $ret);
+
+        $ret = parse($parser, "Test", "EOF;a");
+        $this->assertEquals(Right([]), $ret);
+
+        $ret = parse($parser, "Test", "abc");
+        $err = null;
+        $ret->either(function($a) use (&$err){
+            $err = $a;
+        }, function($a){});
+        $this->assertRegExp("/unexpected end of input/", show($err));
+        $this->assertRegExp("/expecting EOF/", show($err));
+    }
+
 }
