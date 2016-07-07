@@ -265,3 +265,24 @@ function eof()
 {
     return notFollowedBy(anyToken())->label('end of input');
 }
+
+
+/**
+ * manyTill :: (Stream s t) => Parser s u a -> Parser s u end -> Parser s u [a]
+ */
+function manyTill(...$args)
+{
+    return f(function(Parser $p, Parser $end){
+        $scan = function() use (&$scan, $p, $end){
+            return $end->bind(function($_){
+                return parserReturn([]);
+            })->aor($p->bind(function($x) use (&$scan){
+                return $scan()->bind(function($xs) use ($x){
+                    array_unshift($xs, $x);
+                    return parserReturn($xs);
+                });
+            }));
+        };
+        return $scan();
+    }, ...$args);
+}
