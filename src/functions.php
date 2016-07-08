@@ -158,13 +158,6 @@ function parserMap(...$args)
 {
     return f(function($f, $p){
         return new Parser(['_call_map', [$f, $p]]);
-
-        return new Parser(function($s, $cok, $cerr, $eok, $eerr) use ($f, $p){
-            $f2 = $p->unParser();
-            $cok2 = f($cok)->compose($f);
-            $eok2 = f($eok)->compose($f);
-            return $f2($s, $cok2, $cerr, $eok2, $eerr);
-        });
     }, ...$args);
 }
 
@@ -175,41 +168,18 @@ function parserReturn(...$args)
 {
     return f(function($a){
         return new Parser(['_call_ret', [$a]]);
-        return new Parser(function($s, $_, $__, $eok, $___) use ($a){
-            return $eok($a, $s, unknownError($s));
-        });
     }, ...$args);
 }
 
 function parserZero()
 {
     return new Parser(['_call_zero', []]);
-    return new Parser(function($s, $_, $__, $___, $eerr){
-        return $eerr(unknownError($s));
-    });
 }
 
 function parserPlus(...$args)
 {
     return f(function($m, $n){
         return new Parser(['_call_plus', [$m, $n]]);
-
-        $f = function($s, $cok, $cerr, $eok, $eerr) use ($m, $n){
-            $meerr = function($err) use ($s, $n, $cok, $cerr, $eok, $eerr){
-                $neok = function($y, $s2, $err2) use ($eok, $err){
-                    return $eok($y, $s2, mergeError($err, $err2));
-                };
-                $neerr = function($err2) use ($eerr, $err){
-                    return $eerr(mergeError($err, $err2));
-                };
-                $f = $n->unParser();
-                return $f($s, $cok, $cerr, $neok, $neerr);
-            };
-            $f = $m->unParser();
-            return $f($s, $cok, $cerr, $eok, $meerr);
-        };
-
-        return new Parser($f);
     }, ...$args);
 }
 
@@ -218,41 +188,6 @@ function parserBind(...$args)
 {
     return f(function($m, $k){
         return new Parser(['_call_bind', [$m, $k]]);
-
-
-        $f = function($s, $cok, $cerr, $eok, $eerr) use ($m, $k){
-            $mcok = function($x, $s, $err) use ($m, $k, $cok, $cerr){
-                $peok = function($x, $s, $err2) use ($cok, $err){
-                    return $cok($x, $s, mergeError($err, $err2));
-                };
-                $peerr = function($err2) use ($cerr, $err){
-                    return $cerr(mergeError($err, $err2));
-                };
-                $a = $k($x);
-                if ($a instanceof Any)
-                    $a = $a->cast($m);
-                $f = $a->unParser();
-                return $f($s, $cok, $cerr, $peok, $peerr);
-            };
-            $meok = function($x, $s, $err) use ($m, $k, $cok, $cerr, $eok, $eerr){
-                $peok = function($x, $s, $err2) use ($eok, $err){
-                    return $eok($x, $s, mergeError($err, $err2));
-                };
-                $peerr = function($err2) use ($eerr, $err){
-                    return $eerr(mergeError($err, $err2));
-                };
-                $a = $k($x);
-                if ($a instanceof Any)
-                    $a = $a->cast($m);
-                $f = $a->unParser();
-                return $f($s, $cok, $cerr, $peok, $peerr);
-            };
-
-            $f = $m->unParser();
-            return $f($s, $mcok, $cerr, $meok, $eerr);
-        };
-
-        return new Parser($f);
     }, ...$args);
 }
 
@@ -284,60 +219,10 @@ function tokens(...$args){
         $maybeTts = uncons($tts);
         if ($maybeTts instanceof Maybe\Nothing){
             return new Parser(['_call_tokens_empty', []]);
-            return new Parser(function($s, $_, $__, $eok, $___){
-                return $eok([], $s, unknownError($s));
-            });
         }
 
         list($tok, $toks) = $maybeTts->fromJust();
         return new Parser(['_call_tokens', [$tts, $tok, $toks, $nextPoss, $showTokens]]);
-
-
-        return new Parser(function($s, $cok, $cerr, $eok, $eerr) use ($tts, $tok, $toks, $nextPoss, $showTokens){
-            $errEof = function() use ($showTokens, $tts, $s){
-                return setErrorMessage(
-                    new Message(Expect, $showTokens($tts)),
-                    newErrorMessage(new Message(SysUnExpect, ''), $s->pos()));
-            };
-            $errExpect = f(function($x) use ($showTokens, $tts, $s){
-                return setErrorMessage(
-                    new Message(Expect, $showTokens($tts)),
-                    newErrorMessage(new Message(SysUnExpect, $showTokens([$x])), $s->pos()));
-            });
-            $ok = function($rs) use ($tts, $cok, $nextPoss, $s){
-                $pos2 = $nextPoss($s->pos(), $tts);
-                $s2 = new State($rs, $pos2, $s->user());
-                return $cok($tts, $s2, newErrorUnknown($pos2));
-            };
-            $walk = f(function($toks, $rs) use ($ok, $cerr, $errEof, $errExpect, &$walk){
-                $m = uncons($toks);
-                if ($m instanceof Maybe\Nothing)
-                    return $ok($rs);
-
-                list($t, $ts) = $m->fromJust();
-                $rm = uncons($rs);
-                if ($rm instanceof Maybe\Nothing){
-                    return $cerr($errEof());
-                }else{
-                    list($x, $xs) = $rm->fromJust();
-                    if ($t === $x)
-                        return $walk($ts, $xs);
-                    else
-                        return $cerr($errExpect($x));
-                }
-            });
-
-            $ret = uncons($s->input());
-            if ($ret instanceof Maybe\Nothing){
-                return $eerr($errEof());
-            }else{
-                list($x, $xs) = $ret->fromJust();
-                if ($tok === $x)
-                    return $walk($toks, $xs);
-                else
-                    return $eerr($errExpect($x));
-            }
-        });
     }, ...$args);
 }
 
@@ -425,27 +310,6 @@ function tokenPrim(...$args){
 function tokenPrimEx(...$args){
     // $showToken, $nextpos, $maybeState, $test
     return new Parser(['_call_tokenprim', $args]);
-
-    $f = function($s, $cok, $_, $__, $eerr) use ($showToken, $nextpos, $maybeState, $test){
-        $m = uncons($s->input());
-        if ($m instanceof Maybe\Nothing)
-            return $eerr(unexpectError('', $s->pos()));
-
-        list($c, $cs) = $m->fromJust();
-        $ret = $test($c);
-        if ($ret instanceof Maybe\Nothing)
-            return $eerr(unexpectError($showToken($c), $s->pos()));
-
-        $newpos = $nextpos($s->pos(), $c, $cs);
-        $newuser = Maybe\maybe($s->user(), function($nextState) use ($s, $c, $cs){
-            return $nextState($s->pos(), $c, $cs, $s->user());
-        }, $maybeState);
-        $newstate = new State($cs, $newpos, $newuser);
-
-        $x = $ret->fromJust();
-        return $cok($x, $newstate, newErrorUnknown($newpos));
-    };
-    return new Parser($f);
 }
 
 //============================================================
@@ -465,31 +329,6 @@ Loader::setFunction('label', 'Laiz\Parsec');
  */
 function labels(Parser $p, $msgs){
     return new Parser(['_call_labels', [$p, $msgs]]);
-    $f = function($s, $cok, $cerr, $eok, $eerr) use ($p, $msgs){
-        $setExpectErrors = function($err, $msgs){
-            if (count($msgs) === 0)
-                return setErrorMessage(new Message(Expect, ''), $err);
-
-            $msg = array_shift($msgs);
-            $ret = setErrorMessage(new Message(Expect, $msg), $err);
-
-            return foldr(function($e, $m){
-                return addErrorMessage(new Message(Expect, $m), $e);
-            }, $ret, $msgs);
-        };
-
-        $eok2 = function($x, $s2, $err) use ($eok, $msgs, $setExpectErrors){
-            if (!errorIsUnknown($err))
-                $err = $setExpectErrors($err, $msgs);
-            return $eok($x, $s2, $err);
-        };
-        $eerr2 = function($err) use ($eerr, $msgs, $setExpectErrors){
-            return $eerr($setExpectErrors($err, $msgs));
-        };
-        $f = $p->unParser();
-        return $f($s, $cok, $cerr, $eok2, $eerr2);
-    };
-    return new Parser($f);
 }
 
 /**
@@ -499,11 +338,6 @@ function tryP(...$args)
 {
     return f(function(Parser $p){
         return new Parser(['_call_try', [$p]]);
-
-        $f = $p->unParser();
-        return new Parser(function($s, $cok, $_, $eok, $eerr) use ($f){
-            return $f($s, $cok, $eerr, $eok, $eerr);
-        });
     }, ...$args);
 }
 
@@ -514,11 +348,6 @@ function unexpected(...$args)
 {
     return f(function($msg){
         return new Parser(['_call_unexpected', [$msg]]);
-
-        $f = function($s, $_, $__, $___, $eerr) use ($msg){
-            return $eerr(newErrorMessage(new Message(UnExpect, $msg), $s->pos()));
-        };
-        return new Parser($f);
     }, ...$args);
 }
 
@@ -535,11 +364,6 @@ function updateParserState(...$args)
 {
     return f(function($f){
         return new Parser(['_call_update_parser_state', [$f]]);
-
-        return new Parser(function($s, $_, $__, $eok) use ($f){
-            $s2 = $f($s);
-            return $eok($s2, $s2, unknownError($s2));
-        });
     }, ...$args);
 }
 

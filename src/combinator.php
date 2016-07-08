@@ -37,21 +37,6 @@ function manyErr(){
 function manyAccum($acc, Parser $p)
 {
     return new Parser(['_call_many_accum', [$acc, $p]]);
-
-    $f = function($s, $cok, $cerr, $eok, $eerr) use ($acc, $p){
-        $walk = f(function($xs, $x, $s2, $err) use (&$walk, $acc, $p, $s, $cok, $cerr){
-            $okf = function($e) use ($cok, $acc, $x, $xs, $s2){
-                return $cok($acc($x, $xs), $s2, $e);
-            };
-            $f = $p->unParser();
-            return $f($s2, $walk($acc($x, $xs)), $cerr, manyErr(), $okf);
-        });
-
-        $f = $p->unParser();
-        $okf = function($e) use ($eok, $s){ return $eok([], $s, $e); };
-        return $f($s, $walk([]), $cerr, manyErr(), $okf);
-    };
-    return new Parser($f);
 }
 
 /**

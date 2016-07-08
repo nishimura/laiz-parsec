@@ -40,9 +40,6 @@ function space(){
  * char :: (Stream s Char) => Char -> Parser s u Char
  */
 function char($c){
-    // return satisfy(function($a) use ($c){
-    //     return $c === $a;
-    // });
     return label(satisfy(function($a) use ($c){
         return $c === $a;
     }), show([$c]));
