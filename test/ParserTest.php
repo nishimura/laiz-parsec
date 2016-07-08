@@ -9,6 +9,7 @@ use function Laiz\Func\Maybe\Nothing;
 use function Laiz\Func\Monad\ret;
 use function Laiz\Parsec\Stream\uncons;
 use function Laiz\Parsec\parse;
+use function Laiz\Parsec\parserReturn;
 use function Laiz\Parsec\Show\show;
 use function Laiz\Parsec\char;
 use function Laiz\Parsec\str;
@@ -55,8 +56,16 @@ class ParserTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(Just(['a', 'bc']), $ret);
     }
 
-
     public function testParserInstance()
+    {
+        $parser = parserReturn('ab');
+        $this->assertInstanceOf(Parsec\Parser::class, $parser);
+
+        $ret = parse($parser, "Test", "zzz");
+        $this->assertEquals(Right('ab'), $ret);
+    }
+
+    public function testParserStrInstance()
     {
         $parser = str('ab');
         $this->assertInstanceOf(Parsec\Parser::class, $parser);
