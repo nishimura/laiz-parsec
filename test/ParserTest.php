@@ -10,6 +10,7 @@ use function Laiz\Func\Monad\ret;
 use function Laiz\Parsec\Stream\uncons;
 use function Laiz\Parsec\parse;
 use function Laiz\Parsec\parserReturn;
+use function Laiz\Parsec\parserZero;
 use function Laiz\Parsec\Show\show;
 use function Laiz\Parsec\char;
 use function Laiz\Parsec\str;
@@ -63,6 +64,29 @@ class ParserTest extends \PHPUnit_Framework_TestCase
 
         $ret = parse($parser, "Test", "zzz");
         $this->assertEquals(Right('ab'), $ret);
+    }
+
+    public function testParserZero()
+    {
+        $parser = parserZero();
+        $this->assertInstanceOf(Parsec\Parser::class, $parser);
+
+        $ret = parse($parser, "Test", "zzz");
+        $err = null;
+        $ret->either(function($a) use (&$err){
+            $err = $a;
+        }, function($a){});
+        
+        $this->assertRegExp("/unknown parse error/", show($err));
+    }
+
+    public function testParserCharInstance()
+    {
+        $parser = char('a');
+        $this->assertInstanceOf(Parsec\Parser::class, $parser);
+
+        $ret = parse($parser, "Test", "abc");
+        $this->assertEquals(Right('a'), $ret);
     }
 
     public function testParserStrInstance()
