@@ -534,6 +534,8 @@ function unexpected(...$args)
 function updateParserState(...$args)
 {
     return f(function($f){
+        return new Parser(['_call_update_parser_state', [$f]]);
+
         return new Parser(function($s, $_, $__, $eok) use ($f){
             $s2 = $f($s);
             return $eok($s2, $s2, unknownError($s2));

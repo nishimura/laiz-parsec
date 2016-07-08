@@ -324,6 +324,17 @@ _call_many_accum:
     goto _call;
 
 
+
+
+
+_call_update_parser_state:
+    $call = $args[3];
+    $s2 = $context[0]($args[0]);
+    $args = [$s2, $s2, unknownError($s2)];
+    goto _call;
+
+
+
     _call:
     if (!is_array($call)) var_dump($call); // BUG
     list($label, $context) = $call;
@@ -371,6 +382,8 @@ _call_many_accum:
     if ($label === '_call_many_accum_walk') goto _call_many_accum_walk;
     if ($label === '_call_many_accum_ok') goto _call_many_accum_ok;
     if ($label === '_call_many_accum_walk_ok') goto _call_many_accum_walk_ok;
+
+    if ($label === '_call_update_parser_state') goto _call_update_parser_state;
 
     goto _ret;
 
