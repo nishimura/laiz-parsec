@@ -498,6 +498,8 @@ function labels(Parser $p, $msgs){
 function tryP(...$args)
 {
     return f(function(Parser $p){
+        return new Parser(['_call_try', [$p]]);
+
         $f = $p->unParser();
         return new Parser(function($s, $cok, $_, $eok, $eerr) use ($f){
             return $f($s, $cok, $eerr, $eok, $eerr);

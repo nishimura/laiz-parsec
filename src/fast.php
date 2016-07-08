@@ -267,7 +267,7 @@ _call_tokens:
             goto _call;
         }else{
             $call = $context[1];
-            $args = [$context[3]()];
+            $args = [$context[3]($x)];
             goto _call;
         }
     }
@@ -276,6 +276,51 @@ _call_tokens:
     _call_tokens_empty:
     $call = $args[3];
     $args = [[], $args[0], unknownError($args[0])];
+    goto _call;
+
+
+_call_try:
+    $call = $context[0]->unParser();
+    $args = [$args[0], $args[1], $args[4], $args[3], $args[4]];
+    goto _call;
+
+
+_call_many_accum:
+    $call = $context[1]->unParser();
+    $args = [
+        $args[0],
+        ['_call_many_accum_walk',
+         [[], $context[0], $context[1], $args[0], $args[1], $args[2]]],
+        $args[2],
+        manyErr(),
+        ['_call_many_accum_ok', [$args[3], $args[0]]]
+    ];
+    goto _call;
+
+
+    _call_many_accum_walk:
+    $call = $context[2]->unParser();
+    $args = [
+        $args[1],
+        ['_call_many_accum_walk',
+         [$context[1]($args[0], $context[0]),
+          $context[1], $context[2], $context[3], $context[4], $context[5]]],
+        $context[5],
+        manyErr(),
+        ['_call_many_accum_walk_ok',
+         [$context[4], $context[1], $args[0], $context[0], $args[1]]]
+    ];
+    // use context[0] instead of curried function <walk x>
+    goto _call;
+
+    _call_many_accum_walk_ok:
+    $call = $context[0];
+    $args = [$context[1]($context[2], $context[3]), $context[4], $args[0]];
+    goto _call;
+
+    _call_many_accum_ok:
+    $call = $context[0];
+    $args = [[], $context[1], $args[0]];
     goto _call;
 
 
@@ -320,6 +365,15 @@ _call_tokens:
     if ($label === '_call_tokens_ok') goto _call_tokens_ok;
     if ($label === '_call_tokens_walk') goto _call_tokens_walk;
     if ($label === '_call_tokens_empty') goto _call_tokens_empty;
+
+    if ($label === '_call_try') goto _call_try;
+    if ($label === '_call_many_accum') goto _call_many_accum;
+    if ($label === '_call_many_accum_walk') goto _call_many_accum_walk;
+    if ($label === '_call_many_accum_ok') goto _call_many_accum_ok;
+    if ($label === '_call_many_accum_walk_ok') goto _call_many_accum_walk_ok;
+
+    goto _ret;
+
 
     _ret:
     list($label) = Stack::pop_ret();
