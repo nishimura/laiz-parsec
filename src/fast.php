@@ -17,7 +17,6 @@ function _runParser(Parser $p, State $state)
     $ret = null; // return value
 
     $call = $p->unParser();
-    Stack::push_ret(['_end']);
     $args = [$state,
              ['_call_cok', []], ['_call_cerr', []],
              ['_call_eok', []], ['_call_eerr', []]];
@@ -384,17 +383,11 @@ _call_update_parser_state:
     if ($label === '_call_many_accum_walk_ok') goto _call_many_accum_walk_ok;
 
     if ($label === '_call_update_parser_state') goto _call_update_parser_state;
-
     goto _ret;
 
 
+
     _ret:
-    list($label) = Stack::pop_ret();
-    if ($label === '_end')
-        goto _end;
-
-    _end:
-
     return $ret;
 }
 
