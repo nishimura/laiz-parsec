@@ -7,8 +7,6 @@ use Laiz\Func\Loader;
 use Laiz\Func\Any;
 use Laiz\Func\Maybe;
 use function Laiz\Func\f;
-use function Laiz\Func\filter;
-use function Laiz\Func\foldr;
 use function Laiz\Func\cnst;
 use function Laiz\Func\Functor\fmap;
 use function Laiz\Func\Monad\bind;

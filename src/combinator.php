@@ -4,7 +4,6 @@ namespace Laiz\Parsec;
 
 use Laiz\Func;
 use function Laiz\Func\f;
-use function Laiz\Func\foldr;
 use function Laiz\Func\colonr;
 use function Laiz\Func\Functor\fmap;
 use function Laiz\Func\Monad\bind;
@@ -147,7 +146,12 @@ function optional(...$args)
 function choice(...$args)
 {
     $f = function($ps){
-        return foldr(aor(), parserZero(), $ps);
+        // foldr
+        $ret = parserZero();
+        for ($i = count($ps) - 1; $i >= 0; $i--){
+            $ret = aor($ps[$i], $ret);
+        }
+        return $ret;
     };
     if (count($args) === 1)
         return $f(...$args);

@@ -4,8 +4,6 @@ namespace Laiz\Parsec;
 
 use Laiz\Func\Maybe;
 use Laiz\Func\Any;
-use function Laiz\Func\f;
-use function Laiz\Func\foldr;
 use function Laiz\Func\Maybe\fromJust;
 use function Laiz\Parsec\Stream\uncons;
 
@@ -213,11 +211,11 @@ _call_tokens:
             new Message(Expect, $showTokens($tts)),
             newErrorMessage(new Message(SysUnExpect, ''), $s->pos()));
     };
-    $errExpect = f(function($x) use ($showTokens, $tts, $s){
+    $errExpect = function($x) use ($showTokens, $tts, $s){
         return setErrorMessage(
             new Message(Expect, $showTokens($tts)),
             newErrorMessage(new Message(SysUnExpect, $showTokens([$x])), $s->pos()));
-    });
+    };
 
     $r = uncons($s->input());
     if ($r instanceof Maybe\Nothing){
@@ -402,8 +400,10 @@ function setExpectErrors(ParseError $err, $msgs){
     $msg = array_shift($msgs);
     $ret = setErrorMessage(new Message(Expect, $msg), $err);
 
-    return foldr(function($e, $m){
-        return addErrorMessage(new Message(Expect, $m), $e);
-    }, $ret, $msgs);
+    // foldr
+    for ($i = count($msgs) - 1; $i >= 0; $i--){
+        $ret = addErrorMessage(new Message(Expect, $msgs[$i]), $ret);
+    }
+    return $ret;
 }
 
