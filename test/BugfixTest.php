@@ -13,9 +13,6 @@ use function Laiz\Parsec\str;
 use function Laiz\Parsec\optional;
 
 
-Parsec\Char\load();
-Parsec\Combinator\load();
-
 class BugfixTest extends \PHPUnit_Framework_TestCase
 {
     public function testCombinatorBind()

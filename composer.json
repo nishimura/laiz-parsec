@@ -11,7 +11,12 @@
 
   "autoload": {
       "psr-4": { "Laiz\\Parsec\\": "src/" },
-      "files": [ "src/functions.php", "src/fast.php" ]
+      "files": [
+          "src/functions.php",
+          "src/fast.php",
+          "src/char.php",
+          "src/combinator.php"
+      ]
   },
   "autoload-dev": {
     "psr-4": { "Laiz\\Test\\Parsec\\": "test/" }

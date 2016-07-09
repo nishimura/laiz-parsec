@@ -9,8 +9,6 @@ use function Laiz\Parsec\inFix;
 use function Laiz\Parsec\Show\show;
 use function Laiz\Func\Either\Right;
 
-Parsec\Char\load();
-
 class TextTest extends \PHPUnit_Framework_TestCase
 {
     public function testParserInFix()

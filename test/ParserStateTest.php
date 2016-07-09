@@ -17,8 +17,6 @@ use function Laiz\Parsec\getState;
 use function Laiz\Parsec\putState;
 use function Laiz\Parsec\modifyState;
 
-Parsec\Char\load();
-
 class ParserStateTest extends \PHPUnit_Framework_TestCase
 {
     public function testGetState()
