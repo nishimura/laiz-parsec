@@ -36,4 +36,20 @@ class Parser
     {
         return $this->f;
     }
+
+    /**
+     * Override Applicative
+     */
+    public function const1($b)
+    {
+        return const1($this, $b);
+    }
+
+    /**
+     * Override Applicative
+     */
+    public function const2($b)
+    {
+        return const2($this, $b);
+    }
 }
