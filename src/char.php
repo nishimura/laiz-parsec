@@ -20,9 +20,9 @@ function satisfy(...$args){
             return updatePosChar($pos, $c);
         }, function($c) use ($f){
             if ($f($c))
-                return Maybe\Just($c);
+                return new Maybe\Just($c);
             else
-                return Maybe\Nothing();
+                return new Maybe\Nothing();
         });
     };
     if (count($args) === 1)

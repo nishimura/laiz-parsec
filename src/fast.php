@@ -171,9 +171,12 @@ _call_tokenprim:
     }
 
     $newpos = $context[1]($args[0]->pos(), $c, $cs);
-    $newuser = Maybe\maybe($args[0]->user(), function($nextState) use ($args, $c, $cs){
-        return $nextState($args[0]->pos(), $c, $cs, $args[0]->user());
-    }, $context[2]);
+    if ($context[2] instanceof Maybe\Nothing){
+        $newuser = $args[0]->user();
+    }else{
+        $nextState = $context[2]->fromJust();
+        $newuser = $nextState($args[0]->pos(), $c, $cs, $args[0]->user());
+    }
     $newstate = new State($cs, $newpos, $newuser);
 
     $x = $r->fromJust();

@@ -90,9 +90,11 @@ function unknownError(State $s){
 
 function setErrorMessage(Message $msg, ParseError $err)
 {
-    $msgs = filter(function($a) use ($msg){
-        return $a->code() != $msg->code();
-    }, $err->msgs());
+    $msgs = [];
+    foreach ($err->msgs() as $emsg){
+        if ($msg->code() != $emsg->code())
+            $msgs[] = $emsg;
+    }
     array_unshift($msgs, $msg);
     return new ParseError($err->pos(), $msgs);
 }
