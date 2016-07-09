@@ -25,31 +25,6 @@ const Message     = 3;
 const CConsumed = 0;
 const CEmpty    = 1;
 
-class Stack
-{
-    private static $call;
-    private static $r = [];
-    private static $ri = -1;
-
-    public static function set_call($a, $context = [])
-    {
-        self::$call = [$a, $context];
-    }
-    public static function get_call()
-    {
-        return self::$call;
-    }
-
-    public static function push_ret($a)
-    {
-        self::$r[] = $a;
-        self::$ri++;
-    }
-    public static function pop_ret()
-    {
-        return self::$r[self::$ri--];
-    }
-}
 
 function initialPos($name){
     return new SourcePos($name, 1, 1);
