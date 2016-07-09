@@ -403,19 +403,6 @@ function modifyState(...$args)
 
 
 //============================================================
-// Function loader
-//============================================================
-namespace Laiz\Parsec\Char;
-function load(){
-    require_once __DIR__ . '/char.php';
-}
-
-namespace Laiz\Parsec\Combinator;
-function load(){
-    require_once __DIR__ . '/combinator.php';
-}
-
-//============================================================
 // Type Classes
 //============================================================
 namespace Laiz\Parsec\Stream;

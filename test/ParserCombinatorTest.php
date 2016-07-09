@@ -40,9 +40,6 @@ use function Laiz\Func\Either\Left;
 use function Laiz\Func\Alternative\aor;
 use function Laiz\Func\Functor\fmap;
 
-Parsec\Char\load();
-Parsec\Combinator\load();
-
 class ParserCombinatorTest extends \PHPUnit_Framework_TestCase
 {
     public function testUnconsArray()

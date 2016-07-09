@@ -23,8 +23,6 @@ use function Laiz\Func\Either\Left;
 use function Laiz\Func\Alternative\aor;
 use function Laiz\Func\Monoid\mappend;
 
-Parsec\Char\load();
-
 class ParserTest extends \PHPUnit_Framework_TestCase
 {
     public function testUnconsArray()

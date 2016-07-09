@@ -19,8 +19,6 @@ use Laiz\Parsec;
 use function Laiz\Parsec\parse;
 use function Laiz\Parsec\str;
 
-Parsec\Char\load();
-
 $parser = str('abc');
 
 $ret = parse($parser, "Test", "abcdef");
@@ -44,9 +42,6 @@ use function Laiz\Parsec\endBy1;
 use function Laiz\Parsec\char;
 use function Laiz\Parsec\str;
 use function Laiz\Parsec\eof;
-
-Parsec\Char\load();
-Parsec\Combinator\load();
 
 $alnum = satisfy(function($s){
     return ctype_alnum($s);
@@ -104,9 +99,6 @@ use function Laiz\Parsec\notFollowedBy;
 use function Laiz\Parsec\parserReturn;
 use function Laiz\Parsec\sepEndBy;
 use function Laiz\Parsec\Show\show;
-
-Parsec\Char\load();
-Parsec\Combinator\load();
 
 class Attr
 {
