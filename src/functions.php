@@ -7,15 +7,13 @@ use Laiz\Func\Loader;
 use Laiz\Func\Any;
 use Laiz\Func\Maybe;
 use function Laiz\Func\f;
-use function Laiz\Func\filter;
-use function Laiz\Func\foldr;
 use function Laiz\Func\cnst;
 use function Laiz\Func\Functor\fmap;
 use function Laiz\Func\Monad\bind;
 use function Laiz\Func\Monoid\mappend;
 use function Laiz\Parsec\Stream\uncons;
-use function Laiz\Func\Either\Right;
-use function Laiz\Func\Either\Left;
+use Laiz\Func\Either\Right;
+use Laiz\Func\Either\Left;
 
 const SysUnExpect = 0;
 const UnExpect    = 1;
@@ -248,9 +246,9 @@ function runPT($p, $u, $name, $s){
     $res = runParser($p, new State($s, initialPos($name), $u));
     $r = $res->data();
     if ($r instanceof Reply\Ok)
-        return Right($r->data());
+        return new Right($r->data());
     else
-        return Left($r->err());
+        return new Left($r->err());
 }
 
 /**

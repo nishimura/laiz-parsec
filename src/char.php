@@ -75,5 +75,8 @@ function inFix(...$args){
  * string :: (Stream s Char) => String -> Parser s u String
  */
 function str($s){
-    return tokens(show(), updatePosString(), $s);
+    return tokens(
+        function($a){ return show($a); },
+        function($pos, $str){ return updatePosString($pos, $str); },
+        $s);
 }

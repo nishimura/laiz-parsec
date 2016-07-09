@@ -404,11 +404,11 @@ class ParserCombinatorTest extends \PHPUnit_Framework_TestCase
         $ret = parse($parser, "Test", "");
         $this->assertEquals(Right(new Func\Unit()), $ret);
 
-        $p2 = Func\Applicative\const1(str('abc'), eof());
+        $p2 = Parsec\const1(str('abc'), eof());
         $ret = parse($p2, "Test", "abc");
         $this->assertEquals(Right('abc'), $ret);
 
-        $p2 = Func\Applicative\const1(str('abc'), eof());
+        $p2 = Parsec\const1(str('abc'), eof());
         $ret = parse($p2, "Test", "abcd");
         $err = null;
         $ret->either(function($a) use (&$err){

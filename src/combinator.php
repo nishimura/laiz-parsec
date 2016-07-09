@@ -4,10 +4,6 @@ namespace Laiz\Parsec;
 
 use Laiz\Func;
 use function Laiz\Func\f;
-use function Laiz\Func\foldr;
-use function Laiz\Func\colonr;
-use function Laiz\Func\Functor\fmap;
-use function Laiz\Func\Monad\bind;
 use function Laiz\Func\Alternative\aor;
 use function Laiz\parsec\Show\show;
 
@@ -49,7 +45,10 @@ function manyAccum($acc, Parser $p)
 function many(...$args)
 {
     $f = function(Parser $p){
-        return manyAccum(colonr(), $p);
+        return manyAccum(function($a, $as){
+            $as[] = $a;
+            return $as;
+        }, $p);
     };
     if (count($args) === 1)
         return $f(...$args);
@@ -147,7 +146,12 @@ function optional(...$args)
 function choice(...$args)
 {
     $f = function($ps){
-        return foldr(aor(), parserZero(), $ps);
+        // foldr
+        $ret = parserZero();
+        for ($i = count($ps) - 1; $i >= 0; $i--){
+            $ret = aor($ps[$i], $ret);
+        }
+        return $ret;
     };
     if (count($args) === 1)
         return $f(...$args);
@@ -287,9 +291,10 @@ function endBy(...$args)
  */
 function anyToken()
 {
-    return tokenPrim(show(), function($pos, $_tok, $_toks){
-        return $pos;
-    }, Func\Maybe\Just());
+    return tokenPrim(
+        function($a){ return show($a); },
+        function($pos, $_tok, $_toks){ return $pos; },
+        function($a){ return new Func\Maybe\Just($a); });
 }
 
 /**
@@ -335,6 +340,39 @@ function manyTill(...$args)
             }));
         };
         return $scan();
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
+}
+
+//============================================================
+// Utility
+//============================================================
+// override Applicative
+function const1(...$args)
+{
+    $f = function(Parser $a, Parser $b){
+        return $a->bind(function($x) use ($b){
+            return $b->bind(function($_) use ($x){
+                return parserReturn($x);
+            });
+        });
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
+}
+function const2(...$args)
+{
+    $f = function(Parser $a, Parser $b){
+        return $a->bind(function($_) use ($b){
+            return $b->bind(function($x) {
+                return parserReturn($x);
+            });
+        });
     };
     if (count($args) === 2)
         return $f(...$args);
