@@ -251,8 +251,8 @@ function runPT(...$args){
  *       => Parser s () a -> SourceName -> s -> Either ParseError a
  */
 function parse(...$args){
-    return f(function($p){
-        return runPT($p, new Func\Unit());
+    return f(function($p, $name, $s){
+        return runPT($p, new Func\Unit(), $name, $s);
     }, ...$args);
 }
 
