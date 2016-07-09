@@ -12,6 +12,14 @@ class Parser
     public function __construct($f)
     {
         /*
+         * [call_args, ret_args]
+         */
+        /*
+         * call_args => [arg1, arg2, ..., call_label]
+         * ret_args => [storeName1 => storeValue1, ..., ret_label]
+         */
+
+        /*
          * data Parser s u a = Parser { unParser :: forall b .
          *                     State s u
          *                     -> (a -> State s u -> ParseError -> b) -- consumed ok

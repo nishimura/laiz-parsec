@@ -5,6 +5,7 @@ namespace Laiz\Parsec;
 use Laiz\Func;
 use Laiz\Func\Loader;
 use Laiz\Func\Any;
+use Laiz\Func\Maybe;
 use function Laiz\Func\f;
 use function Laiz\Func\filter;
 use function Laiz\Func\foldr;
@@ -12,11 +13,9 @@ use function Laiz\Func\cnst;
 use function Laiz\Func\Functor\fmap;
 use function Laiz\Func\Monad\bind;
 use function Laiz\Func\Monoid\mappend;
-use Laiz\Func\Maybe;
 use function Laiz\Parsec\Stream\uncons;
 use function Laiz\Func\Either\Right;
 use function Laiz\Func\Either\Left;
-
 
 const SysUnExpect = 0;
 const UnExpect    = 1;
@@ -26,6 +25,31 @@ const Message     = 3;
 const CConsumed = 0;
 const CEmpty    = 1;
 
+class Stack
+{
+    private static $call;
+    private static $r = [];
+    private static $ri = -1;
+
+    public static function set_call($a, $context = [])
+    {
+        self::$call = [$a, $context];
+    }
+    public static function get_call()
+    {
+        return self::$call;
+    }
+
+    public static function push_ret($a)
+    {
+        self::$r[] = $a;
+        self::$ri++;
+    }
+    public static function pop_ret()
+    {
+        return self::$r[self::$ri--];
+    }
+}
 
 function initialPos($name){
     return new SourcePos($name, 1, 1);
@@ -133,12 +157,7 @@ function mergeError(...$args)
 function parserMap(...$args)
 {
     return f(function($f, $p){
-        return new Parser(function($s, $cok, $cerr, $eok, $eerr) use ($f, $p){
-            $f2 = $p->unParser();
-            $cok2 = f($cok)->compose($f);
-            $eok2 = f($eok)->compose($f);
-            return $f2($s, $cok2, $cerr, $eok2, $eerr);
-        });
+        return new Parser(['_call_map', [$f, $p]]);
     }, ...$args);
 }
 
@@ -148,38 +167,19 @@ function parserMap(...$args)
 function parserReturn(...$args)
 {
     return f(function($a){
-        return new Parser(function($s, $_, $__, $eok, $___) use ($a){
-            return $eok($a, $s, unknownError($s));
-        });
+        return new Parser(['_call_ret', [$a]]);
     }, ...$args);
 }
 
 function parserZero()
 {
-    return new Parser(function($s, $_, $__, $___, $eerr){
-        return $eerr(unknownError($s));
-    });
+    return new Parser(['_call_zero', []]);
 }
 
 function parserPlus(...$args)
 {
     return f(function($m, $n){
-        $f = function($s, $cok, $cerr, $eok, $eerr) use ($m, $n){
-            $meerr = function($err) use ($s, $n, $cok, $cerr, $eok, $eerr){
-                $neok = function($y, $s2, $err2) use ($eok, $err){
-                    return $eok($y, $s2, mergeError($err, $err2));
-                };
-                $neerr = function($err2) use ($eerr, $err){
-                    return $eerr(mergeError($err, $err2));
-                };
-                $f = $n->unParser();
-                return $f($s, $cok, $cerr, $neok, $neerr);
-            };
-            $f = $m->unParser();
-            return $f($s, $cok, $cerr, $eok, $meerr);
-        };
-
-        return new Parser($f);
+        return new Parser(['_call_plus', [$m, $n]]);
     }, ...$args);
 }
 
@@ -187,39 +187,7 @@ function parserPlus(...$args)
 function parserBind(...$args)
 {
     return f(function($m, $k){
-        $f = function($s, $cok, $cerr, $eok, $eerr) use ($m, $k){
-            $mcok = function($x, $s, $err) use ($k, $cok, $cerr, $m){
-                $peok = function($x, $s, $err2) use ($cok, $err){
-                    return $cok($x, $s, mergeError($err, $err2));
-                };
-                $peerr = function($err2) use ($cerr, $err){
-                    return $cerr(mergeError($err, $err2));
-                };
-                $a = $k($x);
-                if ($a instanceof Any)
-                    $a = $a->cast($m);
-                $f = $a->unParser();
-                return $f($s, $cok, $cerr, $peok, $peerr);
-            };
-            $meok = function($x, $s, $err) use ($k, $cok, $cerr, $eok, $eerr, $m){
-                $peok = function($x, $s, $err2) use ($eok, $err){
-                    return $eok($x, $s, mergeError($err, $err2));
-                };
-                $peerr = function($err2) use ($eerr, $err){
-                    return $eerr(mergeError($err, $err2));
-                };
-                $a = $k($x);
-                if ($a instanceof Any)
-                    $a = $a->cast($m);
-                $f = $a->unParser();
-                return $f($s, $cok, $cerr, $peok, $peerr);
-            };
-
-            $f = $m->unParser();
-            return $f($s, $mcok, $cerr, $meok, $eerr);
-        };
-
-        return new Parser($f);
+        return new Parser(['_call_bind', [$m, $k]]);
     }, ...$args);
 }
 
@@ -250,86 +218,42 @@ function tokens(...$args){
     return f(function($showTokens, $nextPoss, $tts){
         $maybeTts = uncons($tts);
         if ($maybeTts instanceof Maybe\Nothing){
-            return new Parser(function($s, $_, $__, $eok, $___){
-                return $eok([], $s, unknownError($s));
-            });
+            return new Parser(['_call_tokens_empty', []]);
         }
 
         list($tok, $toks) = $maybeTts->fromJust();
-        return new Parser(function($s, $cok, $cerr, $eok, $eerr) use ($tts, $tok, $toks, $nextPoss, $showTokens){
-            $errEof = function() use ($showTokens, $tts, $s){
-                return setErrorMessage(
-                    new Message(Expect, $showTokens($tts)),
-                    newErrorMessage(new Message(SysUnExpect, ''), $s->pos()));
-            };
-            $errExpect = f(function($x) use ($showTokens, $tts, $s){
-                return setErrorMessage(
-                    new Message(Expect, $showTokens($tts)),
-                    newErrorMessage(new Message(SysUnExpect, $showTokens([$x])), $s->pos()));
-            });
-            $ok = function($rs) use ($tts, $cok, $nextPoss, $s){
-                $pos2 = $nextPoss($s->pos(), $tts);
-                $s2 = new State($rs, $pos2, $s->user());
-                return $cok($tts, $s2, newErrorUnknown($pos2));
-            };
-            $walk = f(function($toks, $rs) use ($ok, $cerr, $errEof, $errExpect, &$walk){
-                $m = uncons($toks);
-                if ($m instanceof Maybe\Nothing)
-                    return $ok($rs);
-
-                list($t, $ts) = $m->fromJust();
-                $rm = uncons($rs);
-                if ($rm instanceof Maybe\Nothing){
-                    return $cerr($errEof());
-                }else{
-                    list($x, $xs) = $rm->fromJust();
-                    if ($t === $x)
-                        return $walk($ts, $xs);
-                    else
-                        return $cerr($errExpect($x));
-                }
-            });
-
-            $ret = uncons($s->input());
-            if ($ret instanceof Maybe\Nothing){
-                return $eerr($errEof());
-            }else{
-                list($x, $xs) = $ret->fromJust();
-                if ($tok === $x)
-                    return $walk($toks, $xs);
-                else
-                    return $eerr($errExpect($x));
-            }
-        });
+        return new Parser(['_call_tokens', [$tts, $tok, $toks, $nextPoss, $showTokens]]);
     }, ...$args);
 }
 
 /**
  * runParser :: Parser s u a -> State s u -> Consumed (Reply s u a)
  */
-function runParser(...$args){
-    return f(function(Parser $p, State $s){
-        $f = $p->unParser();
+function runParser(Parser $p, State $s){
+    return _runParser($p, $s);
 
-        $cok = function($a, $s2, $err){
-            return new Consumed(CConsumed,
-                                new Reply\Ok($a, $s2, $err));
-        };
-        $cerr = function($err){
-            return new Consumed(CConsumed,
-                                new Reply\Error($err));
-        };
-        $eok = function($a, $s2, $err){
-            return new Consumed(CEmpty,
-                                new Reply\Ok($a, $s2, $err));
-        };
-        $eerr = function($err){
-            return new Consumed(CEmpty,
-                                new Reply\Error($err));
-        };
 
-        return $f($s, $cok, $cerr, $eok, $eerr);
-    }, ...$args);
+    // $f = $p->unParser();
+
+    // $cok = function($a, $s2, $err){
+    //     return new Consumed(CConsumed,
+    //                         new Reply\Ok($a, $s2, $err));
+    // };
+    // $cerr = function($err){
+    //     return new Consumed(CConsumed,
+    //                         new Reply\Error($err));
+    // };
+    // $eok = function($a, $s2, $err){
+    //     return new Consumed(CEmpty,
+    //                         new Reply\Ok($a, $s2, $err));
+    // };
+    // $eerr = function($err){
+    //     return new Consumed(CEmpty,
+    //                         new Reply\Error($err));
+    // };
+
+
+    // return $f($s, $cok, $cerr, $eok, $eerr);
 }
 
 /**
@@ -384,28 +308,8 @@ function tokenPrim(...$args){
  *             -> Parser s u a
  */
 function tokenPrimEx(...$args){
-    return f(function($showToken, $nextpos, $maybeState, $test){
-        $f = function($s, $cok, $_, $__, $eerr) use ($showToken, $nextpos, $maybeState, $test){
-            $m = uncons($s->input());
-            if ($m instanceof Maybe\Nothing)
-                return $eerr(unexpectError('', $s->pos()));
-
-            list($c, $cs) = $m->fromJust();
-            $ret = $test($c);
-            if ($ret instanceof Maybe\Nothing)
-                return $eerr(unexpectError($showToken($c), $s->pos()));
-
-            $newpos = $nextpos($s->pos(), $c, $cs);
-            $newuser = Maybe\maybe($s->user(), function($nextState) use ($s, $c, $cs){
-                return $nextState($s->pos(), $c, $cs, $s->user());
-            }, $maybeState);
-            $newstate = new State($cs, $newpos, $newuser);
-
-            $x = $ret->fromJust();
-            return $cok($x, $newstate, newErrorUnknown($newpos));
-        };
-        return new Parser($f);
-    }, ...$args);
+    // $showToken, $nextpos, $maybeState, $test
+    return new Parser(['_call_tokenprim', $args]);
 }
 
 //============================================================
@@ -424,31 +328,7 @@ Loader::setFunction('label', 'Laiz\Parsec');
  * labels :: Parser s u a -> [String] -> Parser s u a
  */
 function labels(Parser $p, $msgs){
-    $f = function($s, $cok, $cerr, $eok, $eerr) use ($p, $msgs){
-        $setExpectErrors = function($err, $msgs){
-            if (count($msgs) === 0)
-                return setErrorMessage(new Message(Expect, ''), $err);
-
-            $msg = array_shift($msgs);
-            $ret = setErrorMessage(new Message(Expect, $msg), $err);
-
-            return foldr(function($e, $m){
-                return addErrorMessage(new Message(Expect, $m), $e);
-            }, $ret, $msgs);
-        };
-
-        $eok2 = function($x, $s2, $err) use ($eok, $msgs, $setExpectErrors){
-            if (!errorIsUnknown($err))
-                $err = $setExpectErrors($err, $msgs);
-            return $eok($x, $s2, $err);
-        };
-        $eerr2 = function($err) use ($eerr, $msgs, $setExpectErrors){
-            return $eerr($setExpectErrors($err, $msgs));
-        };
-        $f = $p->unParser();
-        return $f($s, $cok, $cerr, $eok2, $eerr2);
-    };
-    return new Parser($f);
+    return new Parser(['_call_labels', [$p, $msgs]]);
 }
 
 /**
@@ -457,10 +337,7 @@ function labels(Parser $p, $msgs){
 function tryP(...$args)
 {
     return f(function(Parser $p){
-        $f = $p->unParser();
-        return new Parser(function($s, $cok, $_, $eok, $eerr) use ($f){
-            return $f($s, $cok, $eerr, $eok, $eerr);
-        });
+        return new Parser(['_call_try', [$p]]);
     }, ...$args);
 }
 
@@ -470,10 +347,7 @@ function tryP(...$args)
 function unexpected(...$args)
 {
     return f(function($msg){
-        $f = function($s, $_, $__, $___, $eerr) use ($msg){
-            return $eerr(newErrorMessage(new Message(UnExpect, $msg), $s->pos()));
-        };
-        return new Parser($f);
+        return new Parser(['_call_unexpected', [$msg]]);
     }, ...$args);
 }
 
@@ -489,10 +363,7 @@ function unexpected(...$args)
 function updateParserState(...$args)
 {
     return f(function($f){
-        return new Parser(function($s, $_, $__, $eok) use ($f){
-            $s2 = $f($s);
-            return $eok($s2, $s2, unknownError($s2));
-        });
+        return new Parser(['_call_update_parser_state', [$f]]);
     }, ...$args);
 }
 
