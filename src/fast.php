@@ -128,8 +128,8 @@ _call_bind:
         $call = $any->unParser();
         $args = [
             $args[1], $context[2], $context[3],
-            ['_call_bind_meok_peok', [$context[2], $args[2]]],
-            ['_call_bind_meok_peerr', [$context[3], $args[2]]]
+            ['_call_bind_meok_peok', [$context[4], $args[2]]],
+            ['_call_bind_meok_peerr', [$context[5], $args[2]]]
         ];
         ;
         goto _call;
@@ -336,9 +336,9 @@ _call_update_parser_state:
 
 
     _call:
-    if (!is_array($call)) var_dump($call); // BUG
+    if (!is_array($call))
+        new \Exception('error', print_r($call, true)); // BUG
     list($label, $context) = $call;
-    //var_dump([$call, $args]); // test
 
     if ($label === '_call_ret') goto _call_ret;
     if ($label === '_call_cok') goto _call_cok;
