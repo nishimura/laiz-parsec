@@ -13,18 +13,22 @@ use function Laiz\parsec\Show\show;
  * satisfy :: (Stream s Char) => (Char -> Bool) -> Parser s u Char
  */
 function satisfy(...$args){
-    return f(function($f){
+    $f = function($f){
         return tokenPrim(function($c){
             return show([$c]);
         }, function($pos, $c, $_cs){
             return updatePosChar($pos, $c);
         }, function($c) use ($f){
             if ($f($c))
-                return Maybe\Just($c);
+                return new Maybe\Just($c);
             else
-                return Maybe\Nothing();
+                return new Maybe\Nothing();
         });
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -56,11 +60,15 @@ function anyChar(){
  * inFix :: Stream s Char => Parser s u a -> Parser s u a
  */
 function inFix(...$args){
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return aor(tryP($p), bind(anyChar(), function($_) use ($p){
             return inFix($p);
         }));
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**

@@ -19,11 +19,15 @@ use function Laiz\parsec\Show\show;
  */
 function flat(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return $p->bind(function($xs){
             return parserReturn(implode('', $xs));
         });
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 function manyErr(){
@@ -44,9 +48,13 @@ function manyAccum($acc, Parser $p)
  */
 function many(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return manyAccum(colonr(), $p);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -54,14 +62,18 @@ function many(...$args)
  */
 function many1(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return $p->bind(function($a) use ($p){
             return many($p)->bind(function($as) use ($a){
                 array_unshift($as, $a);
                 return parserReturn($as);
             });
         });
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -69,13 +81,17 @@ function many1(...$args)
  */
 function skipMany(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return manyAccum(function($_, $__){
             return [];
         }, $p)->bind(function($_){
             return parserReturn(new Func\Unit());
         });
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -83,11 +99,15 @@ function skipMany(...$args)
  */
 function skipMany1(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return $p->bind(function($_) use ($p){
             return skipMany($p);
         });
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -95,9 +115,13 @@ function skipMany1(...$args)
  */
 function option(...$args)
 {
-    return f(function($a, Parser $p){
+    $f = function($a, Parser $p){
         return $p->aor(parserReturn($a));
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -105,11 +129,15 @@ function option(...$args)
  */
 function optional(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return $p->bind(function($_){
             return parserReturn(new Func\Unit());
         })->aor(parserReturn(new Func\Unit()));
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 
@@ -118,9 +146,13 @@ function optional(...$args)
  */
 function choice(...$args)
 {
-    return f(function($ps){
+    $f = function($ps){
         return foldr(aor(), parserZero(), $ps);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 
@@ -130,7 +162,7 @@ function choice(...$args)
  */
 function between(...$args)
 {
-    return f(function(Parser $open, Parser $close, Parser $p){
+    $f = function(Parser $open, Parser $close, Parser $p){
         return $open->bind(function($_) use ($close, $p){
             return $p->bind(function($x) use ($close){
                 return $close->bind(function($_) use ($x){
@@ -138,7 +170,11 @@ function between(...$args)
                 });
             });
         });
-    }, ...$args);
+    };
+    if (count($args) === 3)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -146,7 +182,7 @@ function between(...$args)
  */
 function sepBy1(...$args)
 {
-    return f(function(Parser $p, Parser $sep){
+    $f = function(Parser $p, Parser $sep){
         return $p->bind(function($x) use ($sep, $p){
             return many($sep->bind(function($_) use($p){ return $p; }))
                 ->bind(function($xs) use ($x){
@@ -154,7 +190,11 @@ function sepBy1(...$args)
                     return parserReturn($xs);
                 })->aor(parserReturn([$x]));
         });
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -162,9 +202,13 @@ function sepBy1(...$args)
  */
 function sepBy(...$args)
 {
-    return f(function(Parser $p, Parser $sep){
+    $f = function(Parser $p, Parser $sep){
         return sepBy1($p, $sep)->aor(parserReturn([]));
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -172,7 +216,7 @@ function sepBy(...$args)
  */
 function sepEndBy1(...$args)
 {
-    return f(function(Parser $p, Parser $sep){
+    $f = function(Parser $p, Parser $sep){
         return $p->bind(function($x) use ($p, $sep){
             return $sep->bind(function($_) use ($p, $sep, $x){
                 return sepEndBy($p, $sep)->bind(function($xs) use ($x){
@@ -181,16 +225,24 @@ function sepEndBy1(...$args)
                 });
             })->aor(parserReturn([$x]));
         });
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 /**
  * sepEndBy :: Parser s u a -> Parser s u sep -> Parser s u [a]
  */
 function sepEndBy(...$args)
 {
-    return f(function(Parser $p, Parser $sep){
+    $f = function(Parser $p, Parser $sep){
         return sepEndBy1($p, $sep)->aor(parserReturn([]));
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -198,28 +250,36 @@ function sepEndBy(...$args)
  */
 function endBy1(...$args)
 {
-    return f(function(Parser $p, Parser $sep){
+    $f = function(Parser $p, Parser $sep){
         $p2 = $p->bind(function($x) use ($sep){
             return $sep->bind(function($_) use ($x){
                 return parserReturn($x);
             });
         });
         return many1($p2);
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 /**
  * endBy :: Parser s u a -> Parser s u sep -> Parser s u [a]
  */
 function endBy(...$args)
 {
-    return f(function(Parser $p, Parser $sep){
+    $f = function(Parser $p, Parser $sep){
         $p2 = $p->bind(function($x) use ($sep){
             return $sep->bind(function($_) use ($x){
                 return parserReturn($x);
             });
         });
         return many($p2);
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -237,12 +297,16 @@ function anyToken()
  */
 function notFollowedBy(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         $p2 = tryP($p)->bind(function($c){
             return unexpected(show($c));
         })->aor(parserReturn(new Func\Unit()));
         return tryP($p2);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -259,7 +323,7 @@ function eof()
  */
 function manyTill(...$args)
 {
-    return f(function(Parser $p, Parser $end){
+    $f = function(Parser $p, Parser $end){
         $scan = function() use (&$scan, $p, $end){
             return $end->bind(function($_){
                 return parserReturn([]);
@@ -271,5 +335,9 @@ function manyTill(...$args)
             }));
         };
         return $scan();
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }

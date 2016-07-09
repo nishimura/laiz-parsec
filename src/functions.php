@@ -31,7 +31,7 @@ function initialPos($name){
 }
 
 function updatePosChar(...$args){
-    return f(function(SourcePos $pos, $char){
+    $f = function(SourcePos $pos, $char){
         if ($char === "\n"){
             return new SourcePos($pos->name(),
                                  $pos->line() + 1,
@@ -47,12 +47,16 @@ function updatePosChar(...$args){
                                  $pos->line(),
                                  $pos->col() + 1);
         }
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 
 function updatePosString(...$args){
-    return f(function(SourcePos $pos, $str){
+    $f = function(SourcePos $pos, $str){
         $len = strlen($str);
         $name = $pos->name();
         $line = $pos->line();
@@ -70,7 +74,11 @@ function updatePosString(...$args){
             $pos = updatePosChar($pos, $str[$i]);
         }
         return $pos;
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 function newErrorUnknown(SourcePos $pos){
@@ -82,9 +90,11 @@ function unknownError(State $s){
 
 function setErrorMessage(Message $msg, ParseError $err)
 {
-    $msgs = filter(function($a) use ($msg){
-        return $a->code() != $msg->code();
-    }, $err->msgs());
+    $msgs = [];
+    foreach ($err->msgs() as $emsg){
+        if ($msg->code() != $emsg->code())
+            $msgs[] = $emsg;
+    }
     array_unshift($msgs, $msg);
     return new ParseError($err->pos(), $msgs);
 }
@@ -105,25 +115,23 @@ function errorIsUnknown(ParseError $e){
     return count($e->msgs()) === 0;
 }
 
-function mergeError(...$args)
+function mergeError(ParseError $e1, ParseError $e2)
 {
-    return f(function(ParseError $e1, ParseError $e2){
-        $msgs1 = $e1->msgs();
-        $msgs2 = $e2->msgs();
-        if (!$msgs2 && $msgs1)
-            return $e1;
-        else if (!$msgs1 && $msgs2)
-            return $e2;
+    $msgs1 = $e1->msgs();
+    $msgs2 = $e2->msgs();
+    if (!$msgs2 && $msgs1)
+        return $e1;
+    else if (!$msgs1 && $msgs2)
+        return $e2;
 
-        $pos1 = $e1->pos();
-        $pos2 = $e2->pos();
-        if ($pos1 == $pos2)
-            return new ParseError($pos1, array_merge($msgs1, $msgs2));
-        else if ($pos1 > $pos2)
-            return $e1;
-        else
-            return $e2;
-    }, ...$args);
+    $pos1 = $e1->pos();
+    $pos2 = $e2->pos();
+    if ($pos1 == $pos2)
+        return new ParseError($pos1, array_merge($msgs1, $msgs2));
+    else if ($pos1 > $pos2)
+        return $e1;
+    else
+        return $e2;
 }
 
 /**
@@ -131,9 +139,13 @@ function mergeError(...$args)
  */
 function parserMap(...$args)
 {
-    return f(function($f, $p){
+    $f = function($f, $p){
         return new Parser(['_call_map', [$f, $p]]);
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -141,9 +153,13 @@ function parserMap(...$args)
  */
 function parserReturn(...$args)
 {
-    return f(function($a){
+    $f = function($a){
         return new Parser(['_call_ret', [$a]]);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 function parserZero()
@@ -153,17 +169,25 @@ function parserZero()
 
 function parserPlus(...$args)
 {
-    return f(function($m, $n){
+    $f = function($m, $n){
         return new Parser(['_call_plus', [$m, $n]]);
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 
 function parserBind(...$args)
 {
-    return f(function($m, $k){
+    $f = function($m, $k){
         return new Parser(['_call_bind', [$m, $k]]);
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -171,13 +195,17 @@ function parserBind(...$args)
  */
 function parserAppend(...$args)
 {
-    return f(function($m, $n){
+    $f = function($m, $n){
         return $m->bind(function($a) use ($n){
             return $n->bind(function($b) use ($a){
                 return parserReturn(mappend($a, $b));
             });
         });
-    }, ...$args);
+    };
+    if (count($args) === 2)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 
@@ -190,7 +218,7 @@ function parserAppend(...$args)
  *        -> Parser s u [t]
  */
 function tokens(...$args){
-    return f(function($showTokens, $nextPoss, $tts){
+    $f = function($showTokens, $nextPoss, $tts){
         $maybeTts = uncons($tts);
         if ($maybeTts instanceof Maybe\Nothing){
             return new Parser(['_call_tokens_empty', []]);
@@ -198,7 +226,11 @@ function tokens(...$args){
 
         list($tok, $toks) = $maybeTts->fromJust();
         return new Parser(['_call_tokens', [$tts, $tok, $toks, $nextPoss, $showTokens]]);
-    }, ...$args);
+    };
+    if (count($args) === 3)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -206,44 +238,19 @@ function tokens(...$args){
  */
 function runParser(Parser $p, State $s){
     return _runParser($p, $s);
-
-
-    // $f = $p->unParser();
-
-    // $cok = function($a, $s2, $err){
-    //     return new Consumed(CConsumed,
-    //                         new Reply\Ok($a, $s2, $err));
-    // };
-    // $cerr = function($err){
-    //     return new Consumed(CConsumed,
-    //                         new Reply\Error($err));
-    // };
-    // $eok = function($a, $s2, $err){
-    //     return new Consumed(CEmpty,
-    //                         new Reply\Ok($a, $s2, $err));
-    // };
-    // $eerr = function($err){
-    //     return new Consumed(CEmpty,
-    //                         new Reply\Error($err));
-    // };
-
-
-    // return $f($s, $cok, $cerr, $eok, $eerr);
 }
 
 /**
  * runPT :: (Stream s t)
  *       => Parser s u a -> u -> SourceName -> s -> Either ParseError a
  */
-function runPT(...$args){
-    return f(function($p, $u, $name, $s){
-        $res = runParser($p, new State($s, initialPos($name), $u));
-        $r = $res->data();
-        if ($r instanceof Reply\Ok)
-            return Right($r->data());
-        else
-            return Left($r->err());
-    }, ...$args);
+function runPT($p, $u, $name, $s){
+    $res = runParser($p, new State($s, initialPos($name), $u));
+    $r = $res->data();
+    if ($r instanceof Reply\Ok)
+        return Right($r->data());
+    else
+        return Left($r->err());
 }
 
 /**
@@ -251,9 +258,13 @@ function runPT(...$args){
  *       => Parser s () a -> SourceName -> s -> Either ParseError a
  */
 function parse(...$args){
-    return f(function($p, $name, $s){
+    $f = function($p, $name, $s){
         return runPT($p, new Func\Unit(), $name, $s);
-    }, ...$args);
+    };
+    if (count($args) === 3)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 
@@ -269,9 +280,13 @@ function parse(...$args){
  *      -> Parser s u a
  */
 function tokenPrim(...$args){
-    return f(function($showToken, $nextpos, $test){
+    $f = function($showToken, $nextpos, $test){
         return tokenPrimEx($showToken, $nextpos, Maybe\Nothing(), $test);
-    }, ...$args);
+    };
+    if (count($args) === 3)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -311,9 +326,13 @@ function labels(Parser $p, $msgs){
  */
 function tryP(...$args)
 {
-    return f(function(Parser $p){
+    $f = function(Parser $p){
         return new Parser(['_call_try', [$p]]);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 /**
@@ -321,9 +340,13 @@ function tryP(...$args)
  */
 function unexpected(...$args)
 {
-    return f(function($msg){
+    $f = function($msg){
         return new Parser(['_call_unexpected', [$msg]]);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 
@@ -413,9 +436,13 @@ Loader::setMethod('uncons', 'Stream', 'Laiz\Parsec');
 
 function uncons(...$args)
 {
-    return f(function($s){
+    $f = function($s){
         return Loader::callInstanceMethod($s, 'uncons', $s);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
 
 namespace Laiz\Parsec\Show;
@@ -426,7 +453,11 @@ Loader::setMethod('show', 'Show', 'Laiz\Parsec');
 
 function show(...$args)
 {
-    return f(function($a){
+    $f = function($a){
         return Loader::callInstanceMethod($a, 'show', $a);
-    }, ...$args);
+    };
+    if (count($args) === 1)
+        return $f(...$args);
+    else
+        return f($f, ...$args);
 }
