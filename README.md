@@ -227,9 +227,6 @@ $ret->either(function($left){
     var_dump($right);
 });
 
-// If error: "PHP Fatal error:  Maximum function nesting level of '100' reached, aborting!" error occurs
-// php.ini "xdebug.max_nesting_level = 1500"
-
 
 /*
 array(1) {
