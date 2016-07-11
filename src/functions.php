@@ -217,7 +217,12 @@ function parserAppend(...$args)
  */
 function tokens(...$args){
     $f = function($showTokens, $nextPoss, $tts){
-        $maybeTts = uncons($tts);
+        if (is_string($tts))
+            $maybeTts = \Laiz\Parsec\Stream\TypeString::uncons($tts);
+        else if (is_array($tts))
+            $maybeTts = \Laiz\Parsec\Stream\TypeArray::uncons($tts);
+        else
+            $maybeTts = uncons($tts);
         if ($maybeTts instanceof Maybe\Nothing){
             return new Parser(['_call_tokens_empty', []]);
         }

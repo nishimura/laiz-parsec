@@ -153,7 +153,13 @@ _call_unexpected:
 
 
 _call_tokenprim:
-    $m = uncons($args[0]->input());
+    $input = $args[0]->input();
+    if (is_string($input))
+        $m = \Laiz\Parsec\Stream\TypeString::uncons($input);
+    else if (is_array($input))
+        $m = \Laiz\Parsec\Stream\TypeString::uncons($input);
+    else
+        $m = uncons($input);
     if ($m instanceof Maybe\Nothing){
         $call = $args[4];
         $args = [unexpectError('', $args[0]->pos())];
@@ -217,7 +223,13 @@ _call_tokens:
             newErrorMessage(new Message(SysUnExpect, $showTokens([$x])), $s->pos()));
     };
 
-    $r = uncons($s->input());
+    $input = $s->input();
+    if (is_string($input))
+        $r = \Laiz\Parsec\Stream\TypeString::uncons($input);
+    else if (is_array($input))
+        $r = \Laiz\Parsec\Stream\TypeArray::uncons($input);
+    else
+        $r = uncons($input);
     if ($r instanceof Maybe\Nothing){
         $call = $args[4];
         $args = [$errEof()];
@@ -247,7 +259,12 @@ _call_tokens:
     goto _call;
 
     _call_tokens_walk:
-    $m = uncons($args[0]);
+    if (is_string($args[0]))
+        $m = \Laiz\Parsec\Stream\TypeString::uncons($args[0]);
+    else if (is_array($args[0]))
+        $m = \Laiz\Parsec\Stream\TypeArray::uncons($args[0]);
+    else
+        $m = uncons($args[0]);
     if ($m instanceof Maybe\Nothing){
         $call = $context[0];
         $args = [$args[1]];
@@ -255,7 +272,12 @@ _call_tokens:
     }
 
     list($t, $ts) = $m->fromJust();
-    $rm = uncons($args[1]);
+    if (is_string($args[1]))
+        $rm = \Laiz\Parsec\Stream\TypeString::uncons($args[1]);
+    else if (is_array($args[1]))
+        $rm = \Laiz\Parsec\Stream\TypeArray::uncons($args[1]);
+    else
+        $rm = uncons($args[1]);
     if ($rm instanceof Maybe\Nothing){
         $call = $context[1];
         $args = [$context[2]()];
