@@ -9,6 +9,10 @@ Laiz Parsec
 [![Code Climate](https://codeclimate.com/github/nishimura/laiz-parsec/badges/gpa.svg)](https://codeclimate.com/github/nishimura/laiz-parsec)
 
 
+[![Latest Stable Version](https://poser.pugx.org/laiz/laiz-parsec/v/stable)](https://packagist.org/packages/laiz/laiz-parsec)
+[![License](https://poser.pugx.org/laiz/laiz-parsec/license)](LICENSE)
+
+
 ## String Parser
 
 ```php
