@@ -40,12 +40,15 @@ class TypeClass extends \PHPUnit_Framework_TestCase
     public function testFmapAp()
     {
         $first = str('first');
-        $parser = fmap(f(function($a, $b){
+        $mfirst = fmap(f(function($a, $b){
             return strtoupper($a) . ' ' . ucfirst($b);
         }), $first);
-        $parser = ap($parser, str('second'));
+        $parser = ap($mfirst, str('second'));
         $ret = parse($parser, "Test", "firstsecond");
         $this->assertEquals(Right('FIRST Second'), $ret);
 
+        $parser = $mfirst->ap(str('second'));
+        $ret = parse($parser, "Test", "firstsecond");
+        $this->assertEquals(Right('FIRST Second'), $ret);
     }
 }
