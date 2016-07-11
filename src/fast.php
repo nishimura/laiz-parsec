@@ -157,7 +157,7 @@ _call_tokenprim:
     if (is_string($input))
         $m = \Laiz\Parsec\Stream\TypeString::uncons($input);
     else if (is_array($input))
-        $m = \Laiz\Parsec\Stream\TypeString::uncons($input);
+        $m = \Laiz\Parsec\Stream\TypeArray::uncons($input);
     else
         $m = uncons($input);
     if ($m instanceof Maybe\Nothing){
