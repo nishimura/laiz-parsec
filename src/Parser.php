@@ -3,6 +3,8 @@
 namespace Laiz\Parsec;
 
 use Laiz\Func\CallTrait;
+use Laiz\Parsec;
+use Laiz\Func\Any;
 
 class Parser
 {
@@ -42,6 +44,8 @@ class Parser
      */
     public function const1($b)
     {
+        if ($b instanceof Any)
+            $b = $b->cast($this);
         return const1($this, $b);
     }
 
@@ -50,6 +54,25 @@ class Parser
      */
     public function const2($b)
     {
+        if ($b instanceof Any)
+            $b = $b->cast($this);
         return const2($this, $b);
+    }
+
+    public function aor($b)
+    {
+        if ($b instanceof Any)
+            $b = $b->cast($this);
+        return Alternative\Parser::aor($this, $b);
+    }
+    public function ap($b)
+    {
+        if ($b instanceof Any)
+            $b = $b->cast($this);
+        return Applicative\Parser::ap($this, $b);
+    }
+    public function bind($f)
+    {
+        return Monad\Parser::bind($this, $f);
     }
 }
