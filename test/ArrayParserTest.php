@@ -7,6 +7,7 @@ use Laiz\Parsec;
 use Laiz\Parsec\SourcePos;
 use function Laiz\Parsec\parse;
 use function Laiz\Parsec\many1;
+use function Laiz\Parsec\many;
 use function Laiz\Parsec\tokenPrim;
 use function Laiz\Parsec\Show\show;
 use function Laiz\Func\Either\Right;
@@ -40,5 +41,17 @@ class ArrayParserTest extends \PHPUnit_Framework_TestCase
             $err = $a;
         }, function($a){});
         $this->assertRegExp("/unexpected 3/", show($err));
+    }
+
+    public function testMany()
+    {
+        $parser = half();
+
+        $ret = parse(many1($parser), "Test", [8, 10, 9, 5]);
+        $this->assertEquals(Right([4, 5]), $ret);
+
+
+        $ret = parse(many($parser), "Test", [1, 8, 10, 9, 5]);
+        $this->assertEquals(Right([]), $ret);
     }
 }
