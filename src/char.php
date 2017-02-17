@@ -80,3 +80,11 @@ function str($s){
         function($pos, $str){ return updatePosString($pos, $str); },
         $s);
 }
+
+/**
+ * String -> Parser String u [String]
+ * NOT USE Stream, uncons
+ */
+function preg($pattern){
+    return new Parser(['_call_preg', [$pattern]]);
+}

@@ -356,10 +356,28 @@ _call_update_parser_state:
     goto _call;
 
 
+_call_preg:
+    $input = $args[0]->input();
+    if ($input === ''){
+        $call = $args[4];
+        $args = [unexpectError('', $args[0]->pos())];
+        goto _call;
+    }
+    if (!preg_match($context[0], $input, $matches)){
+        $call = $args[4];
+        $args = [unexpectError($input[0], $args[0]->pos())];
+        goto _call;
+    }
+    $newpos = updatePosString($args[0]->pos(), $matches[0]);
+    $newinput = substr($input, strlen($matches[0]));
+    $newstate = new State($newinput, $newpos, $args[0]->user());
+    $call = $args[1];
+    $args = [$matches, $newstate, newErrorUnknown($newpos)];
+    goto _call;
 
     _call:
     if (!is_array($call))
-        new \Exception('error', print_r($call, true)); // BUG
+        throw new \Exception('error:' . print_r($call, true)); // BUG
     list($label, $context) = $call;
 
     if ($label === '_call_ret') goto _call_ret;
@@ -406,6 +424,7 @@ _call_update_parser_state:
     if ($label === '_call_many_accum_walk_ok') goto _call_many_accum_walk_ok;
 
     if ($label === '_call_update_parser_state') goto _call_update_parser_state;
+    if ($label === '_call_preg') goto _call_preg;
     goto _ret;
 
 

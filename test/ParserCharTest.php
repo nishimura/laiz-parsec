@@ -6,6 +6,7 @@ use Laiz\Parsec;
 use function Laiz\Parsec\parse;
 use function Laiz\Parsec\str;
 use function Laiz\Parsec\inFix;
+use function Laiz\Parsec\preg;
 use function Laiz\Parsec\Show\show;
 use function Laiz\Func\Either\Right;
 use function Laiz\Parsec\initialPos;
@@ -75,5 +76,32 @@ class ParserCharTest extends \PHPUnit_Framework_TestCase
         $parser = str("\n")->mappend(str("\t\nabc"));
         $ret = parse($parser, "Test", "\n\t\nabcabcdef");
         $this->assertEquals(Right("\n\t\nabc"), $ret);
+    }
+
+    function testPreg()
+    {
+        $parser = preg('/^[[:alnum:]]*/');
+        $ret = parse($parser, "Test", "abc012@abc");
+        $this->assertEquals(Right(["abc012"]), $ret);
+
+        $parser = preg('/^([[:alnum:]]*)@(ab)/');
+        $ret = parse($parser, "Test", "abc012@abc");
+        $this->assertEquals(Right(['abc012@ab', "abc012", 'ab']), $ret);
+
+        $parser = preg("/^@a/");
+        $ret = parse($parser, "Test", "abc012@abc");
+        $err = null;
+        $ret->either(function($a) use (&$err){
+            $err = $a;
+        }, function($a){});
+        $this->assertContains("\"Test\" (line 1, column 1):\nunexpected a", show($err));
+
+        $ret = parse($parser, "Test", "@ba");
+        $err = null;
+        $ret->either(function($a) use (&$err){
+            $err = $a;
+        }, function($a){});
+        // not consumed
+        $this->assertContains("\"Test\" (line 1, column 1):\nunexpected @", show($err));
     }
 }
